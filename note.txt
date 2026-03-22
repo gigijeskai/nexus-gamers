@@ -1,0 +1,9 @@
+-PRISMA-
+Prisma è un moderno ORM (Object-Relational Mapper) open source per Node.js e TypeScript, che semplifica l'interazione con i database relazionali (PostgreSQL, MySQL, SQLite) e MongoDB. Permette di definire lo schema del database in modo leggibile, genera automaticamente un client type-safe e gestisce le migrazioni, migliorando la produttività. 
+
+-------------------------------------------------------------------------------------------------------------------------------------------------
+
+-SUPABASE- dmRB4wFhtnrRYiUH
+Supabase è una piattaforma Backend-as-a-Service (BaaS) open-source basata sul database relazionale PostgreSQL, definita come un'alternativa a Firebase. Offre funzionalità essenziali come database SQL in tempo reale, autenticazione utenti, archiviazione file (storage) e edge functions, permettendo agli sviluppatori di creare backend completi rapidamente senza gestire infrastrutture complesse.
+
+-------------------------------------------------------------------------------------------------------------------------------------------------
