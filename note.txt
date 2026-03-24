@@ -7,3 +7,6 @@ Prisma è un moderno ORM (Object-Relational Mapper) open source per Node.js e Ty
 Supabase è una piattaforma Backend-as-a-Service (BaaS) open-source basata sul database relazionale PostgreSQL, definita come un'alternativa a Firebase. Offre funzionalità essenziali come database SQL in tempo reale, autenticazione utenti, archiviazione file (storage) e edge functions, permettendo agli sviluppatori di creare backend completi rapidamente senza gestire infrastrutture complesse.
 
 -------------------------------------------------------------------------------------------------------------------------------------------------
+
+-ORM-
+Trasforma tabelle SQL in oggetti javascript tipizzati ricevendo dei metodi da usare per i modelli invece di scrivere stringhe sql
