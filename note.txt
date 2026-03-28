@@ -10,3 +10,12 @@ Supabase è una piattaforma Backend-as-a-Service (BaaS) open-source basata sul d
 
 -ORM-
 Trasforma tabelle SQL in oggetti javascript tipizzati ricevendo dei metodi da usare per i modelli invece di scrivere stringhe sql
+
+-------------------------------------------------------------------------------------------------------------------------------------------------
+
+-NEXT-
+E' un "evoluzione" di React, la caretteristica principale e' che i componenti vengono caricati sul server, in questo modo e' piu' reattivo, strizza l'occhio al bknd perche' comunica meglio
+Non ha un sistema di route, la struttura delle cartelle definisce la route
+Di default tutti i componenti sono Server Component, caricati nel server, Client Component che funzionano come React si usano quando c'e' interattivita' cioe' stato locale, effetti, realtime
+Ci sono anche le Server action, funzioni che il client puo' chiamare per modificare dati come form o bottoni
+
