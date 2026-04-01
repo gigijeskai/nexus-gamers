@@ -7,10 +7,11 @@
 import { getAllUsersWithStatus } from "@/lib/db/queries";
 import { FriendCard } from "@/components/friends/FriendCard";
 import { AddGameForm } from "@/components/friends/AddGameForm";
+import { SidebarFriends } from "@/components/SidebarFriends";
 
 // ─── TODO: sostituire con userId dalla sessione auth ──────────────────────────
 // Quando implementeremo NextAuth, questo verrà da: getServerSession() → session.user.id
-const TEMP_USER_ID = "e13bd01b-b63b-4902-89b8-5667e07cb0f3";
+const TEMP_USER_ID = "cfd7ca0f-c3fa-4393-88c5-989d63b4a20a";
 
 // ─── Stat pill ────────────────────────────────────────────────────────────────
 function StatPill({
@@ -118,6 +119,7 @@ export default async function DashboardPage() {
 
         {/* ── Layout: main + sidebar ───────────────────────────────────────── */}
         <div className="flex flex-col lg:flex-row gap-8 items-start">
+        <SidebarFriends />
 
           {/* ── MAIN — lista amici ────────────────────────────────────────── */}
           <main className="flex-1 min-w-0 flex flex-col gap-10">

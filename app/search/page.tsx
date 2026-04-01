@@ -9,7 +9,7 @@ import { SearchBar } from "@/components/friends/SearchBar";
 import { UserSearchCard } from "@/components/friends/UserSearchCard";
 
 // ID fisso di test — sostituire con la sessione reale (es. auth session) in futuro
-const TEST_CURRENT_USER_ID = "ed6cb7c9-bd82-4285-a4dd-4868a013d417";
+const TEST_CURRENT_USER_ID = "cfd7ca0f-c3fa-4393-88c5-989d63b4a20a";
 
 type Props = {
   searchParams: Promise<{ q?: string }>;
