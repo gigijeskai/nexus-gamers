@@ -147,3 +147,46 @@ export async function getFriendshipStatus(userAId: string, userBId: string) {
     select: { id: true, status: true, requesterId: true, addresseeId: true },
   });
 }
+
+// =============================================================================
+// getPendingRequestCount
+// =============================================================================
+// Conta le richieste IN ENTRATA non ancora gestite.
+// Usato dal NotificationBell per il badge rosso.
+// count() restituisce un numero intero, zero overhead di oggetti.
+// =============================================================================
+export async function getPendingRequestCount(userId: string): Promise<number> {
+  return prisma.friendship.count({
+    where: {
+      addresseeId: userId,
+      status: "PENDING",
+    },
+  });
+}
+
+// =============================================================================
+// getFriendships
+// =============================================================================
+// Alias semantico di getAcceptedFriends — richiesto esplicitamente dalla spec.
+// Restituisce tutte le Friendship ACCEPTED dove userId è coinvolto in
+// qualsiasi direzione, con i dati di entrambi gli utenti.
+// =============================================================================
+export async function getFriendships(userId: string) {
+  return prisma.friendship.findMany({
+    where: {
+      status: "ACCEPTED",
+      OR: [
+        { requesterId: userId },
+        { addresseeId: userId },
+      ],
+    },
+    include: {
+      requester: { select: FRIEND_USER_SELECT },
+      addressee: { select: FRIEND_USER_SELECT },
+    },
+    orderBy: { updatedAt: "desc" },
+  });
+}
+
+// Tipo per getFriendships (stessa forma di AcceptedFriendship)
+export type Friendship = Awaited<ReturnType<typeof getFriendships>>[number];
