@@ -1,75 +1,96 @@
 // =============================================================================
-// Nexus — app/dashboard/page.tsx
-// Server Component — fetch diretto, zero waterfall
-// Layout: sidebar destra con AddGameForm + main con friends grid
+// Nexus — app/dashboard/friends/page.tsx
+// Server Component — legge ?tab= dai searchParams, fa tutte le query in parallelo
 // =============================================================================
 
-import { getAllUsersWithStatus } from "@/lib/db/queries";
-import { FriendCard } from "@/components/friends/FriendCard";
-import { AddGameForm } from "@/components/friends/AddGameForm";
-import { SidebarFriends } from "@/components/SidebarFriends";
+import Link from "next/link";
+import {
+  getAcceptedFriends,
+  getPendingRequests,
+  getSentRequests,
+  AcceptedFriendship,
+} from "@/lib/db/queries";
+import { FriendsGrid, PendingList } from "@/components/friends/FriendsGrid";
 
-// ─── TODO: sostituire con userId dalla sessione auth ──────────────────────────
-// Quando implementeremo NextAuth, questo verrà da: getServerSession() → session.user.id
-const TEMP_USER_ID = "cfd7ca0f-c3fa-4393-88c5-989d63b4a20a";
+// ID utente di test — sostituire con sessione reale
+const TEST_USER_ID = "cfd7ca0f-c3fa-4393-88c5-989d63b4a20a";
 
-// ─── Stat pill ────────────────────────────────────────────────────────────────
-function StatPill({
-  label,
-  value,
-  color,
-}: {
-  label: string;
-  value: number;
-  color: string;
-}) {
-  return (
-    <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full border ${color}`}>
-      <span className="font-mono text-lg font-bold leading-none">{value}</span>
-      <span className="font-mono text-xs uppercase tracking-widest opacity-70">{label}</span>
-    </div>
-  );
+type Tab = "all" | "online" | "pending";
+
+type Props = {
+  searchParams: Promise<{ tab?: string }>;
+};
+
+// ── Helper: estrae l'amico dalla riga ────────────────────────────────────────
+function getFriend(friendship: AcceptedFriendship, myId: string) {
+  return friendship.requesterId === myId
+    ? friendship.addressee
+    : friendship.requester;
 }
 
-// ─── Section label ────────────────────────────────────────────────────────────
-function SectionLabel({
-  dotClass,
+// ── Tab link component ────────────────────────────────────────────────────────
+function TabLink({
+  href,
   label,
-  pulse = false,
+  badge,
+  active,
 }: {
-  dotClass: string;
+  href: string;
   label: string;
-  pulse?: boolean;
+  badge?: number;
+  active: boolean;
 }) {
   return (
-    <h2 className="font-mono text-xs uppercase tracking-[0.15em] mb-4 flex items-center gap-2 text-zinc-400">
-      <span
-        className={`w-1.5 h-1.5 rounded-full inline-block ${dotClass} ${
-          pulse ? "animate-pulse" : ""
-        }`}
-      />
+    <Link
+      href={href}
+      className={`
+        relative flex items-center gap-2 px-4 py-2 font-mono text-xs font-semibold
+        uppercase tracking-[0.12em] rounded-xl transition-all duration-200
+        ${
+          active
+            ? "bg-violet-500/15 text-violet-400 border border-violet-500/30"
+            : "text-zinc-500 hover:text-zinc-300 border border-transparent hover:bg-zinc-800/50"
+        }
+      `}
+    >
       {label}
-    </h2>
+      {badge !== undefined && badge > 0 && (
+        <span
+          className={`
+            inline-flex items-center justify-center w-4 h-4 rounded-full text-[9px] font-bold
+            ${active ? "bg-violet-500/30 text-violet-300" : "bg-zinc-700 text-zinc-400"}
+          `}
+        >
+          {badge > 99 ? "99+" : badge}
+        </span>
+      )}
+    </Link>
   );
 }
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
-export default async function DashboardPage() {
-  const users = await getAllUsersWithStatus();
+// ── Page ──────────────────────────────────────────────────────────────────────
+export default async function FriendsPage({ searchParams }: Props) {
+  const { tab } = await searchParams;
+  const activeTab: Tab =
+    tab === "online" ? "online" : tab === "pending" ? "pending" : "all";
 
-  const activeUsers = users.filter(
-    (u) => u.status?.status === "ONLINE" || u.status?.status === "IN_GAME"
-  );
-  const offlineUsers = users.filter(
-    (u) => !u.status || u.status.status === "OFFLINE" || u.status.status === "AWAY"
-  );
+  // Fetch parallelo — Promise.all evita waterfall sequenziali
+  const [friendships, pendingIn, pendingSent] = await Promise.all([
+    getAcceptedFriends(TEST_USER_ID),
+    getPendingRequests(TEST_USER_ID),
+    getSentRequests(TEST_USER_ID),
+  ]);
 
-  const inGameCount = users.filter((u) => u.status?.status === "IN_GAME").length;
+  // Estrai gli amici dalla struttura Friendship
+  const friends = friendships.map((f) => getFriend(f, TEST_USER_ID));
+  const onlineCount = friends.filter(
+    (f) => f.status?.status === "ONLINE" || f.status?.status === "IN_GAME"
+  ).length;
+  const pendingTotal = pendingIn.length + pendingSent.length;
 
   return (
     <div className="min-h-screen bg-zinc-950 text-white">
-
-      {/* ── Sfondo dot pattern ─────────────────────────────────────────────── */}
+      {/* Dot pattern bg */}
       <div
         className="fixed inset-0 pointer-events-none opacity-[0.025]"
         style={{
@@ -77,116 +98,88 @@ export default async function DashboardPage() {
           backgroundSize: "32px 32px",
         }}
       />
-      {/* ── Glow ambientale ────────────────────────────────────────────────── */}
-      <div className="fixed top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-violet-600/5 blur-[120px] pointer-events-none" />
+      {/* Ambient glow */}
+      <div className="fixed top-0 left-1/2 -translate-x-1/2 w-[600px] h-[280px] bg-violet-600/5 blur-[120px] pointer-events-none" />
 
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div className="relative max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
 
         {/* ── Header ──────────────────────────────────────────────────────── */}
-        <header className="mb-10">
+        <header className="mb-8">
           <div className="flex items-start justify-between gap-4 flex-wrap">
             <div>
               <p className="font-mono text-xs text-violet-400 uppercase tracking-[0.2em] mb-2">
-                Nexus // Dashboard
+                Nexus // Friends
               </p>
               <h1 className="text-3xl font-bold text-white tracking-tight">
-                Friends
+                Your Network
               </h1>
               <p className="mt-1 text-sm text-zinc-500 font-mono">
-                {users.length} gamer{users.length !== 1 ? "s" : ""} in your network
+                {friends.length} friend{friends.length !== 1 ? "s" : ""} ·{" "}
+                {onlineCount} online
               </p>
             </div>
-            <div className="flex flex-wrap gap-2">
-              <StatPill
-                value={activeUsers.length}
-                label="Online"
-                color="text-emerald-400 border-emerald-400/20 bg-emerald-400/5"
-              />
-              <StatPill
-                value={inGameCount}
-                label="In Game"
-                color="text-violet-400 border-violet-400/20 bg-violet-400/5"
-              />
-              <StatPill
-                value={offlineUsers.length}
-                label="Offline"
-                color="text-zinc-500 border-zinc-700 bg-zinc-800/40"
-              />
+
+            {/* Quick stats */}
+            <div className="flex gap-2 flex-wrap">
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-emerald-400/20 bg-emerald-400/5 text-emerald-400">
+                <span className="font-mono text-lg font-bold leading-none">{onlineCount}</span>
+                <span className="font-mono text-xs uppercase tracking-widest opacity-70">Online</span>
+              </div>
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-zinc-700 bg-zinc-800/40 text-zinc-400">
+                <span className="font-mono text-lg font-bold leading-none">{friends.length}</span>
+                <span className="font-mono text-xs uppercase tracking-widest opacity-70">Total</span>
+              </div>
+              {pendingIn.length > 0 && (
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-violet-400/20 bg-violet-400/5 text-violet-400">
+                  <span className="font-mono text-lg font-bold leading-none">{pendingIn.length}</span>
+                  <span className="font-mono text-xs uppercase tracking-widest opacity-70">Requests</span>
+                </div>
+              )}
             </div>
           </div>
-          <div className="mt-8 h-px bg-gradient-to-r from-violet-500/40 via-zinc-700/40 to-transparent" />
+
+          {/* Gradient divider */}
+          <div className="mt-6 h-px bg-gradient-to-r from-violet-500/40 via-zinc-700/40 to-transparent" />
         </header>
 
-        {/* ── Layout: main + sidebar ───────────────────────────────────────── */}
-        <div className="flex flex-col lg:flex-row gap-8 items-start">
-        <SidebarFriends />
+        {/* ── Tab navigation ───────────────────────────────────────────────── */}
+        <nav className="flex items-center gap-2 mb-8 flex-wrap">
+          <TabLink
+            href="/dashboard/friends?tab=all"
+            label="All Friends"
+            badge={friends.length}
+            active={activeTab === "all"}
+          />
+          <TabLink
+            href="/dashboard/friends?tab=online"
+            label="Online"
+            badge={onlineCount}
+            active={activeTab === "online"}
+          />
+          <TabLink
+            href="/dashboard/friends?tab=pending"
+            label="Pending"
+            badge={pendingTotal}
+            active={activeTab === "pending"}
+          />
+        </nav>
 
-          {/* ── MAIN — lista amici ────────────────────────────────────────── */}
-          <main className="flex-1 min-w-0 flex flex-col gap-10">
+        {/* ── Tab content ──────────────────────────────────────────────────── */}
+        {activeTab === "all" && (
+          <FriendsGrid friends={friends} filter="all" />
+        )}
 
-            {/* Active now */}
-            {activeUsers.length > 0 && (
-              <section>
-                <SectionLabel
-                  dotClass="bg-emerald-400"
-                  label="Active now"
-                  pulse
-                />
-                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
-                  {activeUsers.map((user) => (
-                    <FriendCard key={user.id} user={user} />
-                  ))}
-                </div>
-              </section>
-            )}
+        {activeTab === "online" && (
+          <FriendsGrid friends={friends} filter="online" />
+        )}
 
-            {/* Offline */}
-            {offlineUsers.length > 0 && (
-              <section>
-                <SectionLabel dotClass="bg-zinc-600" label="Offline" />
-                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
-                  {offlineUsers.map((user) => (
-                    <FriendCard key={user.id} user={user} />
-                  ))}
-                </div>
-              </section>
-            )}
-
-            {/* Empty state */}
-            {users.length === 0 && (
-              <div className="flex flex-col items-center justify-center py-32 text-center">
-                <div className="w-16 h-16 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center mb-4">
-                  <svg width="28" height="28" viewBox="0 0 28 28" fill="none" className="text-zinc-600">
-                    <rect x="2" y="8" width="24" height="14" rx="4" stroke="currentColor" strokeWidth="1.5"/>
-                    <line x1="8" y1="13" x2="8" y2="18" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-                    <line x1="5.5" y1="15.5" x2="10.5" y2="15.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-                    <circle cx="19" cy="13.5" r="1.5" fill="currentColor"/>
-                    <circle cx="17" cy="17" r="1.5" fill="currentColor"/>
-                  </svg>
-                </div>
-                <p className="font-mono text-zinc-500 text-sm">No friends yet.</p>
-                <p className="font-mono text-zinc-700 text-xs mt-1">
-                  Add some friends to get started.
-                </p>
-              </div>
-            )}
-          </main>
-          {/* ── SIDEBAR ───────────────────────────────────────────────────── */}
-          <aside className="w-full lg:w-72 xl:w-80 shrink-0 flex flex-col gap-4">
-
-            {/* Form collega account */}
-            <AddGameForm userId={TEMP_USER_ID} />
-
-            {/* Info box — rimosso quando arriverà l'auth */}
-            <div className="px-4 py-3 rounded-xl bg-amber-500/5 border border-amber-500/15">
-              <p className="font-mono text-[10px] text-amber-500/70 leading-relaxed">
-                ⚠ userId hardcoded — da sostituire con la sessione auth
-                prima del deploy.
-              </p>
-            </div>
-
-          </aside>
-        </div>
+        {activeTab === "pending" && (
+          <PendingList
+            incoming={pendingIn}
+            sent={pendingSent}
+            currentUserId={TEST_USER_ID}
+          />
+        )}
       </div>
     </div>
   );

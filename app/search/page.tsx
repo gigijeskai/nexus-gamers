@@ -5,7 +5,7 @@
 // =============================================================================
 
 import { searchUsersByTag } from "@/lib/db/queries";
-import { SearchBar } from "@/components/friends/SearchBar";
+import { SearchBar } from "@/components/friends/GlobalSearchbar";
 import { UserSearchCard } from "@/components/friends/UserSearchCard";
 
 // ID fisso di test — sostituire con la sessione reale (es. auth session) in futuro

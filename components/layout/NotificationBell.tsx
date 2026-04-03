@@ -7,7 +7,7 @@ import Link from "next/link";
 import { getPendingRequestCount } from "@/lib/db/queries";
 
 // ID di test — sostituire con session.user.id quando l'auth sarà integrata
-const TEST_USER_ID = "SOSTITUISCI_CON_ID_DA_SEED";
+const TEST_USER_ID = "cfd7ca0f-c3fa-4393-88c5-989d63b4a20a";
 
 export async function NotificationBell() {
   const count = await getPendingRequestCount(TEST_USER_ID);
