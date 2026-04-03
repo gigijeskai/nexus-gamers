@@ -7,7 +7,7 @@
 
 import { useActionState, useEffect, useRef } from "react";
 import { Platform } from "@prisma/client";
-import { linkGameAccount, LinkGameAccountState } from "@/lib/db/actions/game-identity";
+import { linkGameAccount, LinkGameAccountState } from "@/lib/actions/game-identity";
 
 // ─── Label leggibili per ogni piattaforma ────────────────────────────────────
 const PLATFORM_LABELS: Record<Platform, string> = {

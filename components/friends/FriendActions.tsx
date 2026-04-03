@@ -7,7 +7,7 @@
 // =============================================================================
 
 import { useTransition } from "react";
-import { acceptFriendRequest, rejectFriendRequest } from "@/lib/db/actions/friendship";
+import { acceptFriendRequest, rejectFriendRequest } from "@/lib/actions/friendship";
 
 type Props = {
   friendshipId: string;

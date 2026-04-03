@@ -7,7 +7,7 @@
 // =============================================================================
 
 import { AcceptedFriendship, PendingRequest, SentRequest } from "@/lib/db/queries";
-import { acceptFriendRequest, rejectFriendRequest } from "@/lib/db/actions/friendship";
+import { acceptFriendRequest, rejectFriendRequest } from "@/lib/actions/friendship";
 import { useTransition } from "react";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────

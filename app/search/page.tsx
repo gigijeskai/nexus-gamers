@@ -5,7 +5,7 @@
 // =============================================================================
 
 import { searchUsersByTag } from "@/lib/db/queries";
-import { SearchBar } from "@/components/friends/GlobalSearchbar";
+import { GlobalSearchBar } from "@/components/layout/GlobalSearchbar";
 import { UserSearchCard } from "@/components/friends/UserSearchCard";
 
 // ID fisso di test — sostituire con la sessione reale (es. auth session) in futuro
@@ -55,7 +55,7 @@ export default async function SearchPage({ searchParams }: Props) {
 
         {/* Search bar */}
         <div className="mb-8">
-          <SearchBar defaultValue={query} />
+          <GlobalSearchBar />
         </div>
 
         {/* Risultati */}

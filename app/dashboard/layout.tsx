@@ -5,7 +5,7 @@
 // =============================================================================
 
 import Link from "next/link";
-import { GlobalSearchBar } from "@/components/friends/GlobalSearchbar";
+import { GlobalSearchBar } from "@/components/layout/GlobalSearchbar";
 import { NotificationBell } from "@/components/layout/NotificationBell";
 import { SidebarFriends } from "@/components/layout/SidebarFriends";
 

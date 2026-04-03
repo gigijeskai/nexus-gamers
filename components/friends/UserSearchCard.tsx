@@ -6,7 +6,7 @@
 // =============================================================================
 
 import { useState, useTransition } from "react";
-import { sendFriendRequest } from "@/lib/db/actions/friendship";
+import { sendFriendRequest } from "@/lib/actions/friendship";
 import { UserSearchResult } from "@/lib/db/queries";
 import { FriendshipStatus } from "@prisma/client";
 

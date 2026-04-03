@@ -6,7 +6,7 @@
 
 import { getAllUsersWithStatus } from "@/lib/db/queries";
 import { FriendCard } from "@/components/friends/FriendCard";
-import { AddGameForm } from "@/components/friends/AddGameForm";
+import { AddGameForm } from "@/components/profile/AddGameForm";
 import { SidebarFriends } from "@/components/layout/SidebarFriends";
 
 // ─── TODO: sostituire con userId dalla sessione auth ──────────────────────────
