@@ -24,10 +24,10 @@ export function GlobalSearchBar() {
     debounceRef.current = setTimeout(() => {
       startTransition(() => {
         if (q.trim().length >= 2) {
-          router.push(`/search?q=${encodeURIComponent(q.trim())}`);
+          router.push(`/dashboard/search?q=${encodeURIComponent(q.trim())}`);
         } else if (q.trim() === "") {
           // Se l'utente cancella tutto, torna alla search vuota
-          router.push("/search");
+          router.push("/dashboard/search");
         }
       });
     }, 350);
@@ -36,7 +36,7 @@ export function GlobalSearchBar() {
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key === "Enter" && value.trim()) {
       if (debounceRef.current) clearTimeout(debounceRef.current);
-      router.push(`/search?q=${encodeURIComponent(value.trim())}`);
+      router.push(`/dashboard/search?q=${encodeURIComponent(value.trim())}`);
     }
     if (e.key === "Escape") {
       setValue("");
