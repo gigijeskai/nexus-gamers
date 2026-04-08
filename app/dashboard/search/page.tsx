@@ -20,7 +20,7 @@
 import { searchUsersByTag } from "@/lib/db/queries";
 import { UserSearchCard } from "@/components/friends/UserSearchCard";
 
-const TEST_CURRENT_USER_ID = "SOSTITUISCI_CON_ID_DA_SEED";
+const TEST_CURRENT_USER_ID = "cfd7ca0f-c3fa-4393-88c5-989d63b4a20a";
 
 type Props = {
   searchParams: Promise<{ q?: string }>;

@@ -13,7 +13,7 @@ import {
 import { FriendsGrid, PendingList } from "@/components/friends/FriendsGrid";
 
 // ID utente di test — sostituire con sessione reale
-const TEST_USER_ID = "cfd7ca0f-c3fa-4393-88c5-989d63b4a20a";
+const TEST_USER_ID = "18442f59-e165-46f6-86f4-26ed6ecb281f";
 
 type Tab = "all" | "online" | "pending";
 
