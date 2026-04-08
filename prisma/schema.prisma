@@ -1,3 +1,8 @@
+// =============================================================================
+// Nexus — schema.prisma (Prisma 7)
+// Le URL di connessione vanno in prisma.config.ts, NON qui
+// =============================================================================
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -6,91 +11,9 @@ datasource db {
   provider = "postgresql"
 }
 
-model User {
-  id                  String         @id @default(uuid()) @db.Uuid
-  email               String         @unique
-  username            String         @unique
-  nexusTag            String         @unique @map("nexus_tag")
-  avatarUrl           String?        @map("avatar_url")
-  createdAt           DateTime       @default(now()) @map("created_at")
-  updatedAt           DateTime       @updatedAt @map("updated_at")
-  receivedFriendships Friendship[]   @relation("FriendshipAddressee")
-  sentFriendships     Friendship[]   @relation("FriendshipRequester")
-  gameIdentities      GameIdentity[]
-  receivedMessages    Message[]      @relation("ReceivedMessages")
-  sentMessages        Message[]      @relation("SentMessages")
-  notifications       Notification[]
-  status              UserStatus?
-
-  @@map("users")
-}
-
-model UserStatus {
-  id          String         @id @default(uuid()) @db.Uuid
-  userId      String         @unique @map("user_id") @db.Uuid
-  status      UserStatusType @default(OFFLINE)
-  currentGame String?        @map("current_game")
-  lastSeen    DateTime       @default(now()) @map("last_seen")
-  updatedAt   DateTime       @updatedAt @map("updated_at")
-  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("user_status")
-}
-
-model GameIdentity {
-  id               String   @id @default(uuid()) @db.Uuid
-  userId           String   @map("user_id") @db.Uuid
-  platform         Platform
-  platformUsername String   @map("platform_username")
-  platformId       String?  @map("platform_id")
-  createdAt        DateTime @default(now()) @map("created_at")
-  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, platform])
-  @@map("game_identities")
-}
-
-model Friendship {
-  id          String           @id @default(uuid()) @db.Uuid
-  requesterId String           @map("requester_id") @db.Uuid
-  addresseeId String           @map("addressee_id") @db.Uuid
-  status      FriendshipStatus @default(PENDING)
-  createdAt   DateTime         @default(now()) @map("created_at")
-  updatedAt   DateTime         @updatedAt @map("updated_at")
-  addressee   User             @relation("FriendshipAddressee", fields: [addresseeId], references: [id], onDelete: Cascade)
-  requester   User             @relation("FriendshipRequester", fields: [requesterId], references: [id], onDelete: Cascade)
-
-  @@unique([requesterId, addresseeId])
-  @@map("friendships")
-}
-
-model Message {
-  id         String   @id @default(uuid()) @db.Uuid
-  senderId   String   @map("sender_id") @db.Uuid
-  receiverId String   @map("receiver_id") @db.Uuid
-  content    String
-  read       Boolean  @default(false)
-  createdAt  DateTime @default(now()) @map("created_at")
-  receiver   User     @relation("ReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
-  sender     User     @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
-
-  @@index([senderId, receiverId, createdAt])
-  @@index([receiverId, senderId, createdAt])
-  @@map("messages")
-}
-
-model Notification {
-  id        String           @id @default(uuid()) @db.Uuid
-  userId    String           @map("user_id") @db.Uuid
-  type      NotificationType
-  payload   Json             @default("{}")
-  read      Boolean          @default(false)
-  createdAt DateTime         @default(now()) @map("created_at")
-  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId, read, createdAt])
-  @@map("notifications")
-}
+// =============================================================================
+// ENUMS
+// =============================================================================
 
 enum UserStatusType {
   ONLINE
@@ -119,7 +42,6 @@ enum FriendshipStatus {
   PENDING
   ACCEPTED
   BLOCKED
-  DECLINE
 
   @@map("friendship_status")
 }
@@ -132,4 +54,153 @@ enum NotificationType {
   NEW_MESSAGE
 
   @@map("notification_type")
+}
+
+// =============================================================================
+// MODELS
+// =============================================================================
+
+model User {
+  id        String   @id @default(uuid()) @db.Uuid
+  email     String   @unique
+  username  String   @unique
+  nexusTag  String   @unique @map("nexus_tag")
+  avatarUrl String?  @map("avatar_url")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Auth.js relations
+  accounts Account[]
+  sessions Session[]
+
+  // Nexus relations
+  status         UserStatus?
+  gameIdentities GameIdentity[]
+  notifications  Notification[]
+
+  sentMessages     Message[] @relation("SentMessages")
+  receivedMessages Message[] @relation("ReceivedMessages")
+
+  sentFriendships     Friendship[] @relation("FriendshipRequester")
+  receivedFriendships Friendship[] @relation("FriendshipAddressee")
+
+  @@map("users")
+}
+
+model UserStatus {
+  id          String         @id @default(uuid()) @db.Uuid
+  userId      String         @unique @map("user_id") @db.Uuid
+  status      UserStatusType @default(OFFLINE)
+  currentGame String?        @map("current_game")
+  lastSeen    DateTime       @default(now()) @map("last_seen")
+  updatedAt   DateTime       @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_status")
+}
+
+model GameIdentity {
+  id               String   @id @default(uuid()) @db.Uuid
+  userId           String   @map("user_id") @db.Uuid
+  platform         Platform
+  platformUsername String   @map("platform_username")
+  platformId       String?  @map("platform_id")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, platform])
+  @@map("game_identities")
+}
+
+model Friendship {
+  id          String           @id @default(uuid()) @db.Uuid
+  requesterId String           @map("requester_id") @db.Uuid
+  addresseeId String           @map("addressee_id") @db.Uuid
+  status      FriendshipStatus @default(PENDING)
+  createdAt   DateTime         @default(now()) @map("created_at")
+  updatedAt   DateTime         @updatedAt @map("updated_at")
+
+  requester User @relation("FriendshipRequester", fields: [requesterId], references: [id], onDelete: Cascade)
+  addressee User @relation("FriendshipAddressee", fields: [addresseeId], references: [id], onDelete: Cascade)
+
+  @@unique([requesterId, addresseeId])
+  @@map("friendships")
+}
+
+model Message {
+  id         String   @id @default(uuid()) @db.Uuid
+  senderId   String   @map("sender_id") @db.Uuid
+  receiverId String   @map("receiver_id") @db.Uuid
+  content    String   @db.Text
+  read       Boolean  @default(false)
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  sender   User @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver User @relation("ReceivedMessages", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  @@index([senderId, receiverId, createdAt])
+  @@index([receiverId, senderId, createdAt])
+  @@map("messages")
+}
+
+model Notification {
+  id        String           @id @default(uuid()) @db.Uuid
+  userId    String           @map("user_id") @db.Uuid
+  type      NotificationType
+  payload   Json             @default("{}")
+  read      Boolean          @default(false)
+  createdAt DateTime         @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, read, createdAt])
+  @@map("notifications")
+}
+
+// =============================================================================
+// AUTH.JS (NextAuth v5) — Required models
+// Gestiti automaticamente da @auth/prisma-adapter.
+// NON modificare i nomi dei campi: Auth.js li cerca esattamente così.
+// =============================================================================
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String  @db.Uuid
+  type              String
+  provider          String
+  providerAccountId String  @map("provider_account_id")
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique @map("session_token")
+  userId       String   @db.Uuid @map("user_id")
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
 }
