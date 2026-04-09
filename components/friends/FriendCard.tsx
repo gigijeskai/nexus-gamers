@@ -50,7 +50,7 @@ const STATUS_CONFIG = {
 
 // ─── Avatar con iniziali ──────────────────────────────────────────────────────
 function Avatar({ user }: { user: UserWithStatus }) {
-  const initials = user.username.slice(0, 2).toUpperCase();
+  const initials = (user.username ?? user.email ?? "??").slice(0, 2).toUpperCase();
   const status = user.status?.status ?? "OFFLINE";
   const cfg = STATUS_CONFIG[status];
 
@@ -64,7 +64,7 @@ function Avatar({ user }: { user: UserWithStatus }) {
     "from-cyan-600 to-cyan-800",
   ];
   const colorIndex =
-    user.username.charCodeAt(0) % avatarColors.length;
+    (user.username ?? user.email ?? "?").charCodeAt(0) % avatarColors.length;
   const gradientClass = avatarColors[colorIndex];
 
   return (
@@ -148,11 +148,11 @@ export function FriendCard({ user }: Props) {
               fill="none"
               className={`shrink-0 ${cfg.textClass} opacity-80`}
             >
-              <rect x="1" y="4" width="12" height="7" rx="2" stroke="currentColor" strokeWidth="1"/>
-              <line x1="4" y1="6.5" x2="4" y2="9" stroke="currentColor" strokeWidth="1" strokeLinecap="round"/>
-              <line x1="2.5" y1="7.75" x2="5.5" y2="7.75" stroke="currentColor" strokeWidth="1" strokeLinecap="round"/>
-              <circle cx="10" cy="6.75" r="0.75" fill="currentColor"/>
-              <circle cx="9" cy="8.5" r="0.75" fill="currentColor"/>
+              <rect x="1" y="4" width="12" height="7" rx="2" stroke="currentColor" strokeWidth="1" />
+              <line x1="4" y1="6.5" x2="4" y2="9" stroke="currentColor" strokeWidth="1" strokeLinecap="round" />
+              <line x1="2.5" y1="7.75" x2="5.5" y2="7.75" stroke="currentColor" strokeWidth="1" strokeLinecap="round" />
+              <circle cx="10" cy="6.75" r="0.75" fill="currentColor" />
+              <circle cx="9" cy="8.5" r="0.75" fill="currentColor" />
             </svg>
             <span className={`font-mono text-xs font-medium truncate ${cfg.textClass}`}>
               {currentGame}
@@ -184,10 +184,9 @@ export function FriendCard({ user }: Props) {
         className={`
           w-full py-2 rounded-xl font-mono text-xs font-semibold uppercase tracking-widest
           border transition-all duration-200 opacity-0 group-hover:opacity-100
-          ${
-            isOffline
-              ? "border-zinc-700 text-zinc-500 hover:bg-zinc-800"
-              : `border-current ${cfg.textClass} hover:bg-current/10`
+          ${isOffline
+            ? "border-zinc-700 text-zinc-500 hover:bg-zinc-800"
+            : `border-current ${cfg.textClass} hover:bg-current/10`
           }
         `}
       >

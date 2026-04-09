@@ -6,9 +6,7 @@
 // =============================================================================
 
 import Link from "next/link";
-import { redirect } from "next/navigation";
-import { requireUser } from "@/lib/auth";
-import { signOut } from "@/auth";
+import { requireSession } from "@/lib/sessions";
 import { GlobalSearchBar } from "@/components/layout/GlobalSearchBar";
 import { NotificationBell } from "@/components/layout/NotificationBell";
 import { SidebarFriends } from "@/components/layout/SidebarFriends";
@@ -19,7 +17,8 @@ export default async function DashboardLayout({
   children: React.ReactNode;
 }) {
   // requireUser() fa redirect a /login se la sessione non esiste
-  const user = await requireUser();
+  const session = await requireSession();
+  const user = session.user;
 
   const initials = (user.username ?? user.name ?? "ME")
     .slice(0, 2)
@@ -137,31 +136,19 @@ export default async function DashboardLayout({
           {/* Lista amici — ID reale dalla sessione */}
           <SidebarFriends userId={user.id} />
 
-          {/* Logout — in fondo alla sidebar */}
+                    {/* Logout — in fondo alla sidebar */}
           <div className="mt-auto pt-4 border-t border-slate-800/60">
-            <form
-              action={async () => {
-                "use server";
-                await signOut({ redirectTo: "/login" });
-              }}
+            <a
+              href="/api/auth/sign-out"
+              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl font-mono text-xs text-slate-500 hover:text-red-400 hover:bg-red-500/5 transition-all duration-150"
             >
-              <button
-                type="submit"
-                className="
-                  w-full flex items-center gap-2.5 px-3 py-2 rounded-xl
-                  font-mono text-xs text-slate-500
-                  hover:text-red-400 hover:bg-red-500/5
-                  transition-all duration-150
-                "
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-                  <polyline points="16 17 21 12 16 7"/>
-                  <line x1="21" y1="12" x2="9" y2="12"/>
-                </svg>
-                Logout
-              </button>
-            </form>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                <polyline points="16 17 21 12 16 7"/>
+                <line x1="21" y1="12" x2="9" y2="12"/>
+              </svg>
+              Logout
+            </a>
           </div>
         </aside>
 

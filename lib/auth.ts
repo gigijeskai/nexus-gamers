@@ -1,47 +1,65 @@
 // =============================================================================
 // Nexus — lib/auth.ts
-// Utility per ottenere l'utente corrente dalla sessione Auth.js.
-// Sostituisce tutti i TEST_CURRENT_USER_ID hardcoded nel progetto.
-//
-// Utilizzo nei Server Components e Server Actions:
-//   const user = await getCurrentUser();
-//   if (!user) redirect("/login");
 // =============================================================================
 
-import { auth } from "@/auth";
-import { redirect } from "next/navigation";
+import { betterAuth } from "better-auth";
+import { prismaAdapter } from "better-auth/adapters/prisma";
+import { nextCookies } from "better-auth/next-js";
+import { prisma } from "@/lib/db/prisma";
 
-// ── getCurrentUser ────────────────────────────────────────────────────────────
-// Ritorna l'oggetto sessione utente o null se non autenticato.
-// Non fa redirect — lascia al chiamante la decisione.
-export async function getCurrentUser() {
-  const session = await auth();
-  return session?.user ?? null;
-}
+export const auth = betterAuth({
+  advanced: {
+    database: {
+      generateId: "uuid",
+    },
+  },
 
-// ── requireUser ───────────────────────────────────────────────────────────────
-// Come getCurrentUser ma fa redirect se l'utente non è autenticato.
-// Usa questa nei Server Components dove l'utente DEVE essere loggato.
-// Il middleware è la prima linea di difesa, questa è la seconda.
-export async function requireUser() {
-  const session = await auth();
+  database: prismaAdapter(prisma, {
+    provider: "postgresql",
+  }),
 
-  if (!session?.user?.id) {
-    redirect("/login");
-  }
+  // Dichiara i campi custom del model User a Better Auth.
+  // Senza questo, auth.$Infer.Session.user non include username/nexusTag/avatarUrl.
+  user: {
+    additionalFields: {
+      username: {
+        type: "string",
+        required: false,
+        input: false, // non accettato dall'utente in fase di signup
+      },
+      nexusTag: {
+        type: "string",
+        required: false,
+        input: false,
+        fieldName: "nexusTag", // nome del campo nel DB (camelCase → Prisma)
+      },
+      avatarUrl: {
+        type: "string",
+        required: false,
+        input: false,
+        fieldName: "avatarUrl",
+      },
+    },
+  },
 
-  return session.user;
-}
+  socialProviders: {
+    github: {
+      clientId:     process.env.AUTH_GITHUB_ID     as string,
+      clientSecret: process.env.AUTH_GITHUB_SECRET as string,
+    },
+  },
 
-// ── getCurrentUserId ──────────────────────────────────────────────────────────
-// Shorthand per ottenere solo l'ID. Usata nelle Server Actions.
-// Lancia redirect se non autenticato — mai fidarsi dell'ID che arriva dal client.
-export async function getCurrentUserId(): Promise<string> {
-  const session = await auth();
+  session: {
+    expiresIn: 60 * 60 * 24 * 30,
+    updateAge: 60 * 60 * 24,
+    cookieCache: { enabled: true, maxAge: 5 * 60 },
+  },
 
-  if (!session?.user?.id) {
-    redirect("/login");
-  }
+  plugins: [nextCookies()],
+  baseURL: process.env.BETTER_AUTH_URL ?? "http://localhost:3000",
+});
 
-  return session.user.id;
-}
+export type Session = typeof auth.$Infer.Session;
+
+// Tipo utente con i campi custom inclusi
+export type User = typeof auth.$Infer.Session.user;

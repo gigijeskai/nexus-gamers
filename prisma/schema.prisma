@@ -61,17 +61,20 @@ enum NotificationType {
 // =============================================================================
 
 model User {
-  id        String   @id @default(uuid()) @db.Uuid
-  email     String   @unique
-  username  String   @unique
-  nexusTag  String   @unique @map("nexus_tag")
-  avatarUrl String?  @map("avatar_url")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  id            String   @id @default(uuid()) @db.Uuid
+  email         String   @unique
+  emailVerified Boolean  @default(false) @map("email_verified")
+  name          String?
+  image         String?
+  username      String?  @unique
+  nexusTag      String?  @unique @map("nexus_tag")
+  avatarUrl     String?  @map("avatar_url")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
 
-  // Auth.js relations
-  accounts Account[]
+  // Better Auth relations
   sessions Session[]
+  accounts Account[]
 
   // Nexus relations
   status         UserStatus?
@@ -86,6 +89,7 @@ model User {
 
   @@map("users")
 }
+
 
 model UserStatus {
   id          String         @id @default(uuid()) @db.Uuid
@@ -160,47 +164,51 @@ model Notification {
 }
 
 // =============================================================================
-// AUTH.JS (NextAuth v5) — Required models
-// Gestiti automaticamente da @auth/prisma-adapter.
-// NON modificare i nomi dei campi: Auth.js li cerca esattamente così.
+// BETTER AUTH — Required models
 // =============================================================================
 
-model Account {
-  id                String  @id @default(cuid())
-  userId            String  @db.Uuid
-  type              String
-  provider          String
-  providerAccountId String  @map("provider_account_id")
-  refresh_token     String? @db.Text
-  access_token      String? @db.Text
-  expires_at        Int?
-  token_type        String?
-  scope             String?
-  id_token          String? @db.Text
-  session_state     String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([provider, providerAccountId])
-  @@map("accounts")
-}
-
 model Session {
-  id           String   @id @default(cuid())
-  sessionToken String   @unique @map("session_token")
-  userId       String   @db.Uuid @map("user_id")
-  expires      DateTime
+  id        String   @id @default(cuid())
+  userId    String   @db.Uuid @map("user_id")
+  token     String   @unique
+  expiresAt DateTime @map("expires_at")
+  ipAddress String?  @map("ip_address")
+  userAgent String?  @map("user_agent")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@map("sessions")
+  @@map("better_auth_sessions")
 }
 
-model VerificationToken {
-  identifier String
-  token      String
-  expires    DateTime
+model Account {
+  id                    String    @id @default(cuid())
+  userId                String    @db.Uuid @map("user_id")
+  accountId             String    @map("account_id")
+  providerId            String    @map("provider_id")
+  accessToken           String?   @db.Text @map("access_token")
+  refreshToken          String?   @db.Text @map("refresh_token")
+  accessTokenExpiresAt  DateTime? @map("access_token_expires_at")
+  refreshTokenExpiresAt DateTime? @map("refresh_token_expires_at")
+  scope                 String?
+  idToken               String?   @db.Text @map("id_token")
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
 
-  @@unique([identifier, token])
-  @@map("verification_tokens")
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([providerId, accountId])
+  @@map("better_auth_accounts")
+}
+
+model Verification {
+  id         String   @id @default(cuid())
+  identifier String
+  value      String
+  expiresAt  DateTime @map("expires_at")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  @@map("better_auth_verifications")
 }
