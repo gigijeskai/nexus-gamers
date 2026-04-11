@@ -28,7 +28,7 @@ function FriendRow({ friend }: { friend: Friend }) {
   const isOffline = statusKey === "OFFLINE";
 
   return (
-    <Link href={`/profile/${friend.username}`}
+    <Link href={`/dashboard/profile/${friend.username}`}
       className={`group flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-slate-800/70 transition-colors duration-150 ${isOffline ? "opacity-50 hover:opacity-70" : ""}`}>
       <div className="relative shrink-0">
         <div className="w-7 h-7 rounded-md overflow-hidden bg-gradient-to-br from-purple-600 to-purple-900 flex items-center justify-center">
