@@ -1,37 +1,53 @@
 // =============================================================================
 // Nexus — proxy.ts  (Next.js 16)
-// Protegge /dashboard verificando la sessione Better Auth.
-// Usa l'API di Better Auth invece di controllare il cookie direttamente
-// perché il token è firmato e il nome può variare (http vs https).
+//
+// Il proxy fa UN solo check: c'è un cookie di sessione?
+//
+// La logica dell'onboarding (nexusTag null → redirect /onboarding) è gestita
+// da dashboard/layout.tsx che gira in Node.js e ha accesso alla sessione reale.
+// Il proxy non può interrogare il DB (Edge Runtime), quindi delega quella
+// responsabilità al layout.
+//
+// Flusso:
+//   Nessun cookie + /dashboard  → redirect /login
+//   Cookie OK     + /login      → redirect /dashboard
+//   Cookie OK     + /dashboard  → passa (il layout gestisce l'onboarding gate)
+//   Nessun cookie + /onboarding → redirect /login
+//   Tutto il resto               → passa
 // =============================================================================
 
 import { NextRequest, NextResponse } from "next/server";
 
-const PROTECTED = ["/dashboard"];
-const SESSION_COOKIE_NAMES = [
+const SESSION_COOKIES = [
   "better-auth.session_token",
   "__Secure-better-auth.session_token",
 ];
 
+function hasSession(request: NextRequest): boolean {
+  return SESSION_COOKIES.some((name) => !!request.cookies.get(name)?.value);
+}
+
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const loggedIn     = hasSession(request);
 
-  const isProtected = PROTECTED.some((p) => pathname.startsWith(p));
-  const isLogin = pathname === "/login";
+  const isDashboard  = pathname.startsWith("/dashboard");
+  const isOnboarding = pathname === "/onboarding";
+  const isLogin      = pathname === "/login";
+  const isAuthApi    = pathname.startsWith("/api/auth");
 
-  // Cerca il cookie di sessione con entrambi i possibili nomi
-  const hasSessionCookie = SESSION_COOKIE_NAMES.some(
-    (name) => !!request.cookies.get(name)?.value
-  );
+  // Mai interferire con gli endpoint di Better Auth
+  if (isAuthApi) return NextResponse.next();
 
-  if (isProtected && !hasSessionCookie) {
-    const loginUrl = new URL("/login", request.url);
-    loginUrl.searchParams.set("callbackUrl", request.nextUrl.href);
-    return NextResponse.redirect(loginUrl);
+  // Utente NON loggato: blocca dashboard e onboarding
+  if (!loggedIn && (isDashboard || isOnboarding)) {
+    const url = new URL("/login", request.url);
+    url.searchParams.set("callbackUrl", request.nextUrl.href);
+    return NextResponse.redirect(url);
   }
 
-  // Se loggato e tenta di andare al login, manda a dashboard
-  if (isLogin && hasSessionCookie) {
+  // Utente loggato sul login → manda al dashboard
+  if (loggedIn && isLogin) {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
@@ -40,6 +56,6 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!api/auth|_next/static|_next/image|favicon.ico|.*\\..*).*)",
+    "/((?!_next/static|_next/image|favicon.ico|.*\\..*).*)",
   ],
 };

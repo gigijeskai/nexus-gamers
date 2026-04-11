@@ -6,7 +6,8 @@
 // =============================================================================
 
 import Link from "next/link";
-import { requireSession } from "@/lib/sessions";
+import { redirect } from "next/navigation";
+import { requireSession } from "@/lib/session";
 import { GlobalSearchBar } from "@/components/layout/GlobalSearchBar";
 import { NotificationBell } from "@/components/layout/NotificationBell";
 import { SidebarFriends } from "@/components/layout/SidebarFriends";
@@ -16,9 +17,19 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  // requireUser() fa redirect a /login se la sessione non esiste
+  // requireSession() fa redirect a /login se la sessione non esiste
   const session = await requireSession();
-  const user = session.user;
+  const user    = session.user;
+
+  // ── Onboarding gate ───────────────────────────────────────────────────────
+  // Se l'utente non ha nexusTag, redirect a /onboarding.
+  // Il layout è read-only: non può scrivere cookie, solo leggere la sessione
+  // e fare redirect. La pulizia del cookie nexus-onboarding avviene nella
+  // Server Action completeOnboarding(), che è l'unico posto autorizzato.
+  if (!user.username) {
+    redirect("/onboarding");
+  }
+  // ─────────────────────────────────────────────────────────────────────────
 
   const initials = (user.username ?? user.name ?? "ME")
     .slice(0, 2)

@@ -52,7 +52,10 @@ export const auth = betterAuth({
   session: {
     expiresIn: 60 * 60 * 24 * 30,
     updateAge: 60 * 60 * 24,
-    cookieCache: { enabled: true, maxAge: 5 * 60 },
+    // cookieCache disabilitata: la cache conserva username=null per 5 minuti
+    // dopo l'onboarding, causando un loop /onboarding → /dashboard → /onboarding.
+    // Senza cache, ogni request legge la sessione aggiornata dal DB.
+    cookieCache: { enabled: false },
   },
 
   plugins: [nextCookies()],

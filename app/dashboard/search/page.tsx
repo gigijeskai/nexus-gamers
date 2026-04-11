@@ -19,21 +19,24 @@
 
 import { searchUsersByTag } from "@/lib/db/queries";
 import { UserSearchCard } from "@/components/friends/UserSearchCard";
-
-const TEST_CURRENT_USER_ID = "cfd7ca0f-c3fa-4393-88c5-989d63b4a20a";
+import { requireSession } from "@/lib/session";
 
 type Props = {
   searchParams: Promise<{ q?: string }>;
 };
 
 export default async function SearchPage({ searchParams }: Props) {
+  // Sessione reale — mai ID hardcoded
+  const session = await requireSession();
+  const myId    = session.user.id;
+
   const { q } = await searchParams;
   const query = q?.trim() ?? "";
 
   // Minimo 2 caratteri per evitare query inutili sul DB
   const users =
     query.length >= 2
-      ? await searchUsersByTag(query, TEST_CURRENT_USER_ID)
+      ? await searchUsersByTag(query, myId)
       : [];
 
   return (
@@ -65,7 +68,7 @@ export default async function SearchPage({ searchParams }: Props) {
                 <UserSearchCard
                   key={user.id}
                   user={user}
-                  currentUserId={TEST_CURRENT_USER_ID}
+                  currentUserId={myId}
                 />
               ))}
             </div>
