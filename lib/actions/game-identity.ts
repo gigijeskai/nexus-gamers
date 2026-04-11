@@ -1,15 +1,14 @@
+"use server";
+
 // =============================================================================
 // Nexus — lib/actions/game-identity.ts
-// Server Actions — girano sul server, mai esposte al client
+// userId letto dalla sessione — mai passato come prop dal client.
 // =============================================================================
-
-"use server";
 
 import { revalidatePath } from "next/cache";
 import { Platform } from "@prisma/client";
 import { prisma } from "@/lib/db/prisma";
-
-// ─── Tipi ─────────────────────────────────────────────────────────────────────
+import { getCurrentUserId } from "@/lib/session";
 
 export type LinkGameAccountState = {
   success: boolean;
@@ -20,73 +19,78 @@ export type LinkGameAccountState = {
   };
 };
 
-// ─── Action ───────────────────────────────────────────────────────────────────
-
 export async function linkGameAccount(
-  userId: string,
   prevState: LinkGameAccountState,
   formData: FormData
 ): Promise<LinkGameAccountState> {
+  // ID dalla sessione — il client non può falsificarlo
+  const userId = await getCurrentUserId();
 
-  // ── 1. Estrai i dati dal form ──────────────────────────────────────────────
-  const rawPlatform = formData.get("platform")?.toString().trim();
+  const rawPlatform      = formData.get("platform")?.toString().trim();
   const platformUsername = formData.get("platformUsername")?.toString().trim();
 
-  // ── 2. Validazione ────────────────────────────────────────────────────────
   const fieldError: LinkGameAccountState["fieldError"] = {};
 
   if (!rawPlatform || !(rawPlatform in Platform)) {
-    fieldError.platform = "Seleziona una piattaforma valida.";
+    fieldError.platform = "Select a valid platform.";
   }
-
   if (!platformUsername || platformUsername.length < 2) {
-    fieldError.platformUsername = "Il nickname deve avere almeno 2 caratteri.";
+    fieldError.platformUsername = "Username must be at least 2 characters.";
   }
-
   if (platformUsername && platformUsername.length > 64) {
-    fieldError.platformUsername = "Il nickname non può superare i 64 caratteri.";
+    fieldError.platformUsername = "Username cannot exceed 64 characters.";
   }
-
   if (Object.keys(fieldError).length > 0) {
     return { success: false, fieldError };
   }
 
   const platform = rawPlatform as Platform;
 
-  // ── 3. Salva nel DB ───────────────────────────────────────────────────────
   try {
     await prisma.gameIdentity.create({
-      data: {
-        userId,
-        platform,
-        platformUsername: platformUsername!,
-      },
+      data: { userId, platform, platformUsername: platformUsername! },
     });
 
-    // ── 4. Invalida la cache della dashboard ─────────────────────────────────
     revalidatePath("/dashboard");
+    revalidatePath(`/dashboard/profile`);
 
     return { success: true };
-
   } catch (error: unknown) {
-    // Prisma lancia questo codice quando viola un @@unique
-    // Nel nostro caso: stesso utente + stessa piattaforma
     if (
-      typeof error === "object" &&
-      error !== null &&
-      "code" in error &&
-      (error as { code: string }).code === "P2002"
+      typeof error === "object" && error !== null &&
+      "code" in error && (error as { code: string }).code === "P2002"
     ) {
       return {
         success: false,
-        error: `Hai già collegato un account ${platform.toLowerCase()}. Rimuovilo prima di aggiungerne un altro.`,
+        error: `You already have a ${platform.toLowerCase()} account linked. Remove it first.`,
       };
     }
+    return { success: false, error: "Internal error. Please try again." };
+  }
+}
 
-    console.error("[linkGameAccount]", error);
-    return {
-      success: false,
-      error: "Errore interno. Riprova tra qualche secondo.",
-    };
+// ── removeGameAccount ─────────────────────────────────────────────────────────
+export async function removeGameAccount(
+  identityId: string
+): Promise<{ success: boolean; error?: string }> {
+  const userId = await getCurrentUserId();
+
+  try {
+    // Verifica che la game identity appartenga all'utente corrente
+    const identity = await prisma.gameIdentity.findUnique({
+      where: { id: identityId },
+      select: { userId: true },
+    });
+
+    if (!identity || identity.userId !== userId) {
+      return { success: false, error: "Not authorized." };
+    }
+
+    await prisma.gameIdentity.delete({ where: { id: identityId } });
+    revalidatePath("/dashboard/profile");
+
+    return { success: true };
+  } catch {
+    return { success: false, error: "Could not remove account." };
   }
 }
